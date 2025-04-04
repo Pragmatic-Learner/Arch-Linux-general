@@ -1,22 +1,23 @@
 # Arch Linux General set up
 This repo is to save my general set up for arch Linux, to facillitate re-installing linux.  It should set up arch and also sets of graphic design and utility packages.
 
-# Processes (in order)
+# General Processes (in order)
+- [ ] Check UEFI bitness
+    1. cat /sys/firmware/efi/fw\_platform\_size
 - [ ] Set-Up Time
     1. timedatectl
     2. timedatectl set-timezone "Time/Zone"
     3. timedatectl set-ntp True
 - [ ] Set-Up network
     1. iwctl
-    2. device list
-    3. station "device-name" scan
-    4. station "device-name" connect "network-name"
-    5. Enter passphrase
+    2. iwctl device list
+    3. iwctl station "device-name" scan
+    4. iwctl --passphrase passphrase station "device-name" connect "network-name"
 - [ ] Partition disk
     1. lsblk
     2. fdisk -l
     3. fdisk /dev/"disk-name"
-    4. {g, n, <default>, <default>, "EFI-size", n, <default>, <default>, "SWAP-size", n, <default>, <default>, "ROOT-size", w}
+    4. {g, n, \<default\>, \<default\>, "EFI-size", n, \<default\>, \<default\>, "SWAP-size", n, \<default\>, \<default\>, "ROOT-size", w}
 - [ ] Set up filesystems
     1. mkfs.fat -F 32 /dev/"disk-name"1
     2. mkswap /dev/"disk-name"2
