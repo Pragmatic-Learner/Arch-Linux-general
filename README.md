@@ -3,28 +3,28 @@ This repo is to save my general set up for arch Linux, to facillitate re-install
 
 # Processes (in order)
 - [ ] Set-Up Time
-    - timedatectl
-    - timedatectl set-timezone "Time/Zone"
-    - timedatectl set-ntp True
-2. Set-Up network
-    - iwctl
-    - device list
-    - station "device-name" scan
-    - station "device-name" connect "network-name"
-    - Enter passphrase
-3. Partition disk
-    - lsblk
-    - fdisk -l
-    - fdisk /dev/"disk-name"
-    - {g, n, <default>, <default>, "EFI-size", n, <default>, <default>, "SWAP-size", n, <default>, <default>, "ROOT-size", w}
-4. Set up filesystems
-    - mkfs.fat -F 32 /dev/"disk-name"1
-    - mkswap /dev/"disk-name"2
-    - mkfs.ext4 /dev/"disk-name"3
-5. Mount disk(partition)
-    - mount /dev/"disk-name"3 /mnt
-    - mount --mkdir /dev/"disk-name"1 /mnt/boot
-    - swapon /dev/"disk-name"2
+    1. timedatectl
+    2. timedatectl set-timezone "Time/Zone"
+    3. timedatectl set-ntp True
+- [ ] Set-Up network
+    1. iwctl
+    2. device list
+    3. station "device-name" scan
+    4. station "device-name" connect "network-name"
+    5. Enter passphrase
+- [ ] Partition disk
+    1. lsblk
+    2. fdisk -l
+    3. fdisk /dev/"disk-name"
+    4. {g, n, <default>, <default>, "EFI-size", n, <default>, <default>, "SWAP-size", n, <default>, <default>, "ROOT-size", w}
+- [ ] Set up filesystems
+    1. mkfs.fat -F 32 /dev/"disk-name"1
+    2. mkswap /dev/"disk-name"2
+    3. mkfs.ext4 /dev/"disk-name"3
+- [ ] Mount disk(partition)
+    1. mount /dev/"disk-name"3 /mnt
+    3. mount --mkdir /dev/"disk-name"1 /mnt/boot
+    3. swapon /dev/"disk-name"2
 
 ## List of graphic design packages
 1. Blender3D
