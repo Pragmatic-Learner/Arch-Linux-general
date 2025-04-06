@@ -13,12 +13,12 @@ mount /dev/sda3 /mnt
 mount --mkdir /dev/sda1 /mnt/boot
 swapon /dev/sda2
 
-echo "include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
+#echo "include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
 cd ~
 
 #installing packages
 #replace intel-ucode with amd-ucode if using amd cpy alright
-pacstrap -K /mnt base base-devel linux linux-firmware intel-ucode git neovim efibootmgr networkmanager mesa lib32-mesa xf86-video-intel vulkan-intel lib32-vulkan-intel libva-mesa-driver mesa-vdpau sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber kitty reflector openssh man sudo gimp virtualbox-guest-utils cutefish pcmanfm ffmpeg mpv
+pacstrap -K /mnt base base-devel linux linux-firmware intel-ucode git neovim efibootmgr networkmanager mesa xf86-video-intel vulkan-intel  libva-mesa-driver mesa-vdpau sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber kitty reflector openssh man sudo gimp virtualbox-guest-utils cutefish pcmanfm ffmpeg mpv
 #generate automatic mount points
 genfstab -U /mnt >> mnt/etc/fstab
 
