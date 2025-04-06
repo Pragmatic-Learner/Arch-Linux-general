@@ -13,8 +13,12 @@ mount /dev/sda3 /mnt
 mount --mkdir /dev/sda1 /mnt/boot
 swapon /dev/sda2
 
+echo "include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
+cd ~
+
 #installing packages
-pacstrap -K /mnt base base-devel linux linux-firmware git neovim efibootmgr networkmanager pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber reflector openssh man sudo
+#replace intel-ucode with amd-ucode if using amd cpy alright
+pacstrap -K /mnt base base-devel linux linux-firmware intel-ucode git neovim efibootmgr networkmanager mesa lib32-mesa xf86-video-intel vulkan-intel lib32-vulkan-intel libva-mesa-driver mesa-vdpau sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber kitty reflector openssh man sudo gimp virtualbox-guest-utils cutefish pcmanfm ffmpeg mpv
 #generate automatic mount points
 genfstab -U /mnt >> mnt/etc/fstab
 
@@ -40,3 +44,12 @@ arch-chroot /mnt
 exit
 umount -R /mnt
 timedatectl set-ntp true
+systemctl enable NetworkManager
+systemctl enable vboxservice.service
+systemctl start sddm.service
+sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
+
+#yay -Y --gendb
+#yay -Syu --devel
+#yay -Y --devel --save
+#yay brave-bin
