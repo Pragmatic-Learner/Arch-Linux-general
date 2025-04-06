@@ -10,35 +10,31 @@ mount /dev/sda3 /mnt
 mount --mkdir /dev/sda1 /mnt/boot
 swapon /dev/sda2
 
-pacstrap -K /mnt base linux linux-firmware
+pacstrap -K /mnt base linux linux-firmware git neovim
 
--U /mnt >> mnt/etc/fstab
+genfstab -U /mnt >> mnt/etc/fstab
 
-arch-chroot
-
-ln -sf /usr/share/zoneinfo/Time/Zone /etc/localtine
-hwclock -- systohc
-
-nvim /etc/locale.gen > "en_US.UTF-8 UTF-8"
-nvim /etc/locale.gen >> "en_GB.UTF-8 UTF-8"
-locale-gen
+nvim /mnt/install.sh >ln -sf /usr/share/zoneinfo/Time/Zone /etc/localtine
+nvim /mnt/install.sh >> hwclock --systohc
+nvim /mnt/install.sh >> nvim /etc/locale.gen > "en_US.UTF-8 UTF-8"
+nvim /mnt/install.sh >> nvim /etc/locale.gen >> "en_GB.UTF-8 UTF-8"
+nvim /mnt/install.sh >> locale-gen
 nvim /etc/locale.conf > "LANG=en\_GB.UTF-8 UTF-8"
-nvim /etc/vconsole > "KEYMAP=us"
+nvim /mnt/install.sh >> nvim /etc/vconsole > "KEYMAP=us"
+nvim /mnt/install.sh >> nvim /etc/hostname > "ARCH"
+nvim /mnt/install.sh >> nvim /etc/hosts > "123.0.0.1 localhost"
+nvim /mnt/install.sh >> nvim /etc/hosts > "::1 localhost"
+nvim /mnt/install.sh >> nvim /etc/hosts > "123.0.1.1 ARCH"
+nvim /mnt/install.sh >> passwd "1234"
+nvim /mnt/install.sh >> useradd -mG wheel "user1"
+nvim /mnt/install.sh >> passwd "1234"
+nvim /mnt/install.sh >> grub-install --target=x86\_64-efi --efi-directory=/boot --bootloader-id=GRUB
+nvim /mnt/install.sh >> grub-mkconfig -o /boot/grub/grub.cfg
 
-nvim /etc/hostname > "ARCH"
-nvim /etc/hosts > "123.0.0.1 localhost"
-nvim /etc/hosts > "::1 localhost"
-nvim /etc/hosts > "123.0.1.1 ARCH"
+arch-chroot /mnt && sh install.sh
 
-passwd "1234"
-
-useradd -mG wheel "user1"
-passwd "1234"
-
-grub-install --target=x86\_64-efi --efi-directory=/boot --bootloader-id=GRUB
-grub-mkconfig -o /boot/grub/grub.cfg
 
 exit
 umount -R /mnt
-reboot
+
 timedatectl set-ntp true
