@@ -2,20 +2,34 @@
 #Setting Up time
 confirm="empty"
 until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]];#Decide whether to change timezone or not
-	clear && timedatectl status
-	echo -e "List of commands:\n\tY = Change timezone\n\tN = Do not change timezone"
-	read -p "Change timezone? [ default = N ] " confirm && confirm=${confirm^^}
+	clear
+	echo -e "\n\n\n"
+	timedatectl status
+	echo -e "\n\n\n"
+	echo -e "List of commands:"
+	echo -e "\tY = Change timezone"
+	echo -e "\tN = Do not change timezone"
+	read -p "Change timezone? [ default = N ] " confirm
+	confirm=${confirm^^}
 done
+
+
+
 unset confirm 
 while true; do								#Keep Asking for Region And City input until proper matches are found
 	clear && echo "Entering timezones... [ Format: Region/City ]"
 	echo "Note :"
 	echo -e "\tFIRST LETTER of [[ Region ]] and [[ City ]] should be UPPERCASE."
 	echo -e "\tREST SHOULD BE LOWERCASE"
-	echo "Here is the available Regions And City"
+	echo -e "Here is the available Regions And City\n\n\n"
+	cd /usr/share/zoneinfo && ls -Ad */
+	echo -e "\n\n\nDISPLAYING REGIONS"
+	
 
-	cd /usr/share/zoneinfo && ls -Ad */ && echo -e "\n\nDISPLAYING REGIONS"
+
 	read -p "Enter timezone [ Region ] : " Region			#Region Input
+
+
 
 	if [ -d "/usr/share/zoneinfo/$Region" ]; then
 		cd /usr/share/zoneinfo/$Region && ls -Ad */
@@ -35,36 +49,33 @@ while true; do								#Keep Asking for Region And City input until proper matche
 	fi
 	unset Region && unset City
 done
-timedatectl set-ntp true i&& unset Region && unset City
+unset Region && unset City
+timedatectl set-ntp true
+
+
+
 
 #setting up disk partitions
 disk="notadrive"
-until [ -d "/sys/block/$disk" ]; do					#Repeat input of drive name until valid one is input
-	clear && lsblk && fdisk -l
-	read -p "Enter name of disk to format : " disk
-done
+
+
+until [ -d "/sys/block/$disk" ]; do clear && lsblk && fdisk -l; read -p "Enter name of disk to format : " disk; done
+
 echo "Disk found, beginning formatting..."
 
-until [[ $lgptdos == "gpt" ]] || [[ $lgptdos == "dos" ]]; do		#Repeat input of partition table until either gpt or dos is input
-	read -p "Enter label ( gpt / dos ) :: " lgptdos
-done
+until [[ $lgptdos == "gpt" ]] || [[ $lgptdos == "dos" ]]; do read -p "Enter label ( gpt / dos ) :: " lgptdos; done
 
 echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
 
-until [[ $efi =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $efi ]]; do		#Repeat input of efi size until valid one is input
-	read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi
-done
-until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do		#Repeat input of swap size until valid one is input
-	read -p "Enter size of SWAP partition (default = None)		:: " swap
-done
-until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $root ]]; do		#Repeat input of root size until valid one is input
-	read -p "Enter size of ROOT partition (default = ALL)		:: " root
-done
-#Must add ability to choose root filesystem
+until [[ $efi =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $efi ]]; do read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi; done
+until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do read -p "Enter size of SWAP partition (default = None)		:: " swap; done
+until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $root ]]; do read -p "Enter size of ROOT partition (default = ALL)		:: " root; done
+#Must add ability to choose root filesystem in the future
 
 #setting up partition and filesystems
 [[ -z $efi ]] && efi="512MiB"
 [[ -z $root ]] && root="+"
+
 if [[ -z $swap ]]; then
 	echo -e "label:$lgptdos\n size=$efi, type=U\n size=$root, type=L" | sfdisk /dev/sda
 	
