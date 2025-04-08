@@ -1,7 +1,7 @@
 #!/bin/bash
 #Setting Up time
 confirm="empty"
-until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]];#Decide whether to change timezone or not
+until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]]; do
 	clear
 	echo -e "\n\n\n"
 	timedatectl status
@@ -16,7 +16,7 @@ done
 
 
 unset confirm 
-while true; do								#Keep Asking for Region And City input until proper matches are found
+while true; do
 	clear && echo "Entering timezones... [ Format: Region/City ]"
 	echo "Note :"
 	echo -e "\tFIRST LETTER of [[ Region ]] and [[ City ]] should be UPPERCASE."
@@ -67,9 +67,16 @@ until [[ $lgptdos == "gpt" ]] || [[ $lgptdos == "dos" ]]; do read -p "Enter labe
 
 echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
 
+
+
 until [[ $efi =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $efi ]]; do read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi; done
+
 until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do read -p "Enter size of SWAP partition (default = None)		:: " swap; done
+
 until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $root ]]; do read -p "Enter size of ROOT partition (default = ALL)		:: " root; done
+
+
+
 #Must add ability to choose root filesystem in the future
 
 #setting up partition and filesystems
