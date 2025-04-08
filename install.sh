@@ -10,30 +10,38 @@ until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]]; do #D
 done
 while true; do #Change time until time is confirmed
 	Region="" && City=""
+
+	#Prompt
 	echo "Entering timezones... [ Format: Region/City ]"
-	echo -e "Note :\n\tFIRST LETTER of \"Region\" and \"City\" should be UPPERCASE.\n\tREST SHOULD BE LOWERCASE"
+	echo "Note :"
+	echo -e "\tFIRST LETTER of [[ Region ]] and [[ City ]] should be UPPERCASE."
+	echo -e "\tREST SHOULD BE LOWERCASE"
 	echo "Here is the available Regions And City"
 	cd /usr/share/zoneinfo && ls && echo "DISPLAYING REGIONS"
+
+	#Input
 	read -p "Enter timezone [ Region ] : " Region
-	if [[ -f "/usr/share/zoneinfo/$Region" ]]; then
+	if [ -d "/usr/share/zoneinfo/$Region" ]; then
 		cd /usr/share/zoneinfo/$Region && ls
 		read -p "Enter timezone [ City ] : " City
+		if [ -f "/usr/share/zoneinfo/$Region/$City" ]; then
+			timedatectl set-timezone $Region/$City
+		else
+			echo "ERROR!! CITY DOES NOT EXIST"
+			continue
+		fi
+	elif [ -f "/usr/share/zoneinfo/%Region" ]; then
+		timedatectl set-timezone $Region
 	else
 		echo "ERROR!!  REGION DOES NOT EXIST"
 		continue
 	fi
-	if [[ -f "/usr/share/zoneinfo/$Region/$City" ]]; then
-		timedatectl set-timezone $Region/$City
-		timedatectl set-ntp true
-		break
-	else
-		echo "ERROR!! CITY DOES NOT EXIST"
-		continue
-	fi
+	break
 done
-clear
+timedatectl set-ntp true
+
 #setting up disk partitions
-lsblk && fdisk -l
+clear && lsblk && fdisk -l
 echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
 read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi
 read -p "Enter size of SWAP partition (default = None)		:: " swap
@@ -52,6 +60,8 @@ else
 fi
 
 #echo -e "g\nn\n\n\n$(efi)\nn\n\n\n$(swap)\nn\n\n\n$(root)\nt\n1\n1\nt\n2\n19\nw\n" | fdisk /dev/sda
+
+#setting up filesystem
 mkfs.fat -F 32 /dev/sda1
 mkswap /dev/sda2
 mkfs.ext4 /dev/sda3
@@ -61,12 +71,9 @@ mount /dev/sda3 /mnt
 mount --mkdir /dev/sda1 /mnt/boot
 swapon /dev/sda2
 
-#echo "include = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
-
 #installing packages
-#replace intel-ucode with amd-ucode if using amd cpy alright
-pacstrap -K /mnt base linux linux-firmware base-devel intel-ucode git neovim efibootmgr networkmanager mesa xf86-video-intel vulkan-intel  libva-mesa-driver mesa-vdpau sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber kitty reflector openssh man sudo gimp virtualbox-guest-utils cutefish pcmanfm ffmpeg mpv
-#grub
+#replace intel-ucode with amd-ucode if using amd cpu alright
+pacstrap -K /mnt base linux linux-firmware base-devel intel-ucode git neovim efibootmgr grub networkmanager mesa xf86-video-intel vulkan-intel  libva-mesa-driver mesa-vdpau sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber kitty reflector openssh man sudo gimp virtualbox-guest-utils cutefish pcmanfm ffmpeg mpv
 
 #generate automatic mount points
 genfstab -U /mnt >> /mnt/etc/fstab
