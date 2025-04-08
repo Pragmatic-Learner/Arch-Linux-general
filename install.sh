@@ -1,21 +1,57 @@
-#!/bin/bash
-#setting up time
-timedatectl set-ntp true
+#setting up some variables
+confirm="empty"
 
+#setting up time
+until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]]; do #Decide whether or not to change time
+	clear && timedatectl status
+	echo -e "List of commands:\n\tY = Change timezone\n\tN = Do not change timezone"
+	read -p "Change timezone? [ default = Y ] " confirm && confirm=${confirm^^}
+	timezone="invalid"
+done
+while true; do #Change time until time is confirmed
+	Region="" && City=""
+	echo "Entering timezones... [ Format: Region/City ]"
+	echo -e "Note :\n\tFIRST LETTER of \"Region\" and \"City\" should be UPPERCASE.\n\tREST SHOULD BE LOWERCASE"
+	echo "Here is the available Regions And City"
+	cd /usr/share/zoneinfo && ls && echo "DISPLAYING REGIONS"
+	read -p "Enter timezone [ Region ] : " Region
+	if [[ -f "/usr/share/zoneinfo/$Region" ]]; then
+		cd /usr/share/zoneinfo/$Region && ls
+		read -p "Enter timezone [ City ] : " City
+	else
+		echo "ERROR!!  REGION DOES NOT EXIST"
+		continue
+	fi
+	if [[ -f "/usr/share/zoneinfo/$Region/$City" ]]; then
+		timedatectl set-timezone $Region/$City
+		timedatectl set-ntp true
+		break
+	else
+		echo "ERROR!! CITY DOES NOT EXIST"
+		continue
+	fi
+done
 clear
-lsblk
-echo "Add one of these suffix' to the end of the partition size: MiB, GiB, MB, GB"
-read -p "Enter size of EFI boot partition (default=512MiB)	:: " efip
-read -p "Enter size of SWAP partition (default=4GiB)		:: " swapp
-read -p "Enter size of ROOT partition (default=ALL)		:: " rootp
+#setting up disk partitions
+lsblk && fdisk -l
+echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
+read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi
+read -p "Enter size of SWAP partition (default = None)		:: " swap
+read -p "Enter size of ROOT partition (default = ALL)		:: " root
 #setting up partition and filesystems
-if [[ $(efip) == "" ]]; then
-	efip="512MiB"
+if [[ -z $efi ]]; then
+	efi="512MiB"
 fi
-if [[ $(swapp) == "" ]]; then
-	swapp="4GiB"
+if [[ -z $root ]]; then
+	root="+"
 fi
-echo -e "g\nn\n\n\n$(efip)\nn\n\n\n$(swapp)\nn\n\n\n$(rootp)\nt\n1\n1\nt\n2\n19\nw\n" | fdisk /dev/sda
+if [[ -z $swap ]]; then
+	echo -e "label:gpt\n size=$efi, type=U\n size=$root, type=L" | sfdisk /dev/sda
+else
+	echo -e "label:gpt\n size=$efi, type=U\n size=$swap, type=S\n size=$root, type=L" | sfdisk /dev/sda
+fi
+
+#echo -e "g\nn\n\n\n$(efi)\nn\n\n\n$(swap)\nn\n\n\n$(root)\nt\n1\n1\nt\n2\n19\nw\n" | fdisk /dev/sda
 mkfs.fat -F 32 /dev/sda1
 mkswap /dev/sda2
 mkfs.ext4 /dev/sda3
@@ -29,7 +65,7 @@ swapon /dev/sda2
 
 #installing packages
 #replace intel-ucode with amd-ucode if using amd cpy alright
-pacstrap -K /mnt base base-devel linux linux-firmware intel-ucode git neovim efibootmgr networkmanager mesa xf86-video-intel vulkan-intel  libva-mesa-driver mesa-vdpau sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber kitty reflector openssh man sudo gimp virtualbox-guest-utils cutefish pcmanfm ffmpeg mpv
+pacstrap -K /mnt base linux linux-firmware base-devel intel-ucode git neovim efibootmgr networkmanager mesa xf86-video-intel vulkan-intel  libva-mesa-driver mesa-vdpau sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber kitty reflector openssh man sudo gimp virtualbox-guest-utils cutefish pcmanfm ffmpeg mpv
 #grub
 
 #generate automatic mount points
@@ -52,14 +88,14 @@ echo "passwd" >> /mnt/install.sh
 echo "efibootmgr --create --disk /dev/sda --part 1 --label "Arch Linux" --loader /vmlinuz-linux --unicode 'root=block_device_identifier rw initrd=\initramfs-linux.img'" >> install.sh
 echo "exit" >> /mnt/install.sh
 
-arch-chroot /mnt
+echo "install.sh" | arch-chroot /mnt
 
 umount -R /mnt
 timedatectl set-ntp true
-systemctl enable NetworkManager
-systemctl enable vboxservice.service
-systemctl start sddm.service
-sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
+#systemctl enable NetworkManager
+#systemctl enable vboxservice.service
+#systemctl start sddm.service
+#sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
 
 #yay -Y --gendb
 #yay -Syu --devel
