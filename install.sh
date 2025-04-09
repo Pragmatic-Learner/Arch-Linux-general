@@ -50,8 +50,8 @@ timedatectl set-ntp true
 
 
 #setting up disk partitions
-disk="notadrive"
 while [[ confirm != "Y" ]]; do
+	disk="empy" && efi="empty" && swap="empty" && root="empty"
 	until [ -d "/sys/block/$disk" ]; do
 		clear
 		lsblk && fdisk -l
