@@ -180,7 +180,8 @@ passwd
 read -p "Enter name for main Profile (THIS PROFILE WILL BE GRANTED WHEEL PRIVILEDGES, basicly admin) : " nuser
 useradd -mG wheel \$nuser
 echo "Enter password for main Profile \$nuser :: "
-passwd
+passwd \$nuser
+EDITOR=nvim visudo
 echo
 while true; do
 	read -p "ADD ANOTHER USER ( Y/n ) ? " confirm
