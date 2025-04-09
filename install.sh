@@ -34,12 +34,14 @@ until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]]; do	#Setting Up time
 			read -p "Enter timezone [ City ] : " City		#	Input	City
 	
 			if [ -f "/usr/share/zoneinfo/$Region/$City" ]; then
-				timedatectl set-timezone $Region/$City
+				timezone="${Region}/${City}"
+				timedatectl set-timezone $timezone
 			else
 				echo "ERROR!! CITY DOES NOT EXIST"
 			fi
 		elif [ -f "/usr/share/zoneinfo/%Region" ]; then			#If file /usr/share/zoneinfo/Region exists
-			timedatectl set-timezone $Region
+			timezone=$Region
+			timedatectl set-timezone $timezone
 		else
 			echo "ERROR!!  REGION DOES NOT EXIST"
 		fi
@@ -160,7 +162,7 @@ cat <<END > /mnt/install.sh
 #!/bin/bash
 disk=$disk
 clear
-ln -sf /usr/share/zoneinfo/Time/Zone /etc/localtine
+ln -sf /usr/share/zoneinfo/$timezone /etc/localtine
 hwclock --systohc
 echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 echo "en_GB.UTF-8 UTF-8" >> /etc/locale.gen
@@ -212,12 +214,11 @@ grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 unset disk
 
-sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
-
-yay -Y --gendb
-yay -Syu --devel
-yay -Y --devel --save
-yay brave-bin
+#sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
+#yay -Y --gendb
+#yay -Syu --devel
+#yay -Y --devel --save
+#yay brave-bin
 
 timedatectl set-ntp true
 systemctl enable NetworkManager
