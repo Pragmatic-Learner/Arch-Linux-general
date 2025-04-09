@@ -1,6 +1,5 @@
 #!/bin/bash
-confirm="empty"
-until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]]; do	#Setting Up time
+until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]]; do	#Setting Up time
 	clear
 	echo -e "\n\n\n"
 	timedatectl status
@@ -8,50 +7,54 @@ until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]]; do	#S
 	echo -e "List of commands:"
 	echo -e "\tY = Change timezone"
 	echo -e "\tN = Do not change timezone"
-	read -p "Change timezone? [ default = N ] " confirm
+	read -p "Change timezone ( Y/n )" confirm
 	confirm=${confirm^^}
-done
-
-while [[ $confirm == "Y" ]]; do
-	clear
-	echo "Entering timezones... [ Format: Region/City ]"
-	echo "Note :"
-	echo -e "\tFIRST LETTER of [[ Region ]] and [[ City ]] should be UPPERCASE."
-	echo -e "\tREST SHOULD BE LOWERCASE"
-	echo -e "Here is the available Regions And City\n\n\n"
-
-	cd /usr/share/zoneinfo
-	ls -Ad
-	echo -e "\n\n\nDISPLAYING REGIONS"
-
-	read -p "Enter timezone [ Region ] : " Region			#	Input	Region
-
-	if [ -d "/usr/share/zoneinfo/$Region" ]; then			#If folder /usr/share/zoneinfo/Region exists
-		cd /usr/share/zoneinfo/$Region && ls -Ad */
-		read -p "Enter timezone [ City ] : " City		#	Input	City
-
-		if [ -f "/usr/share/zoneinfo/$Region/$City" ]; then
-			timedatectl set-timezone $Region/$City
-			unset confirm
+	if [[ $confirm == "Y" ]]; then
+		clear
+		echo "Entering timezones... [ Format: Region/City ]"
+		echo "Note :"
+		echo -e "\tFIRST LETTER of [[ Region ]] and [[ City ]] should be UPPERCASE."
+		echo -e "\tREST SHOULD BE LOWERCASE"
+		echo -e "Here is the available Regions And City"
+		echo
+		echo
+		cd /usr/share/zoneinfo
+		ls -Ad */
+		echo
+		echo "DISPLAYING REGIONS"
+	
+		read -p "Enter timezone [ Region ] : " Region			#	Input	Region
+	
+		if [ -d "/usr/share/zoneinfo/$Region" ]; then			#If folder /usr/share/zoneinfo/Region exists
+			cd /usr/share/zoneinfo/$Region
+			echo
+			echo
+			ls -A
+			echo
+			read -p "Enter timezone [ City ] : " City		#	Input	City
+	
+			if [ -f "/usr/share/zoneinfo/$Region/$City" ]; then
+				timedatectl set-timezone $Region/$City
+			else
+				echo "ERROR!! CITY DOES NOT EXIST"
+			fi
+		elif [ -f "/usr/share/zoneinfo/%Region" ]; then			#If file /usr/share/zoneinfo/Region exists
+			timedatectl set-timezone $Region
 		else
-			echo "ERROR!! CITY DOES NOT EXIST"
+			echo "ERROR!!  REGION DOES NOT EXIST"
 		fi
-	elif [ -f "/usr/share/zoneinfo/%Region" ]; then			#If file /usr/share/zoneinfo/Region exists
-		timedatectl set-timezone $Region
-		unset confirm
-	else
-		echo "ERROR!!  REGION DOES NOT EXIST"
+		unset Region && unset City
+		timedatectl set-ntp true
+		timedatectl
+		read -p "Confirm timezone set-up ( Y/n ) : " confirm
+		confirm=${confirm^^}
 	fi
-	unset Region && unset City
 done
-timedatectl set-ntp true
-
 
 
 
 #setting up disk partitions
-while [[ confirm != "Y" ]]; do
-	disk="empy" && lgptdos="empty" && efi="empty" && swap="empty" && root="empty"
+while [[ $confirm != "Y" ]]; do
 	until [ -d "/sys/block/$disk" ]; do
 		clear
 		lsblk && fdisk -l
@@ -76,7 +79,7 @@ while [[ confirm != "Y" ]]; do
 		echo "Disk		: /dev/$disk"
 		echo "Disk label	: $lgptdos"
 		echo
-		read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi
+		read -p "Enter size of EFI boot partition (default = 512MB)	:: " efi
 		[[ -z $efi ]] && efi="512M"
 	done
 
@@ -106,8 +109,6 @@ while [[ confirm != "Y" ]]; do
 	echo "SWAP size		: $swap"
 	echo "ROOT size		: $root"
 	echo
-
-	clear
 	lsblk
 	read -p "Confirm set-up ( Y/n ) ?" confirm
 	confirm=${confirm^^}
@@ -210,19 +211,6 @@ echo
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 unset disk
-exit
-END
-unset disk
-
-echo "sh install.sh" | arch-chroot /mnt
-
-read -p "Checkpoint : " check
-umount -R /mnt
-timedatectl set-ntp true
-systemctl enable NetworkManager
-#systemctl enable vboxservice.service
-
-#systemctl start sddm.service
 
 sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
 
@@ -230,3 +218,17 @@ yay -Y --gendb
 yay -Syu --devel
 yay -Y --devel --save
 yay brave-bin
+
+timedatectl set-ntp true
+systemctl enable NetworkManager
+systemctl enable vboxservice.service
+systemctl start sddm.service
+exit
+END
+unset disk
+
+arch-chroot /mnt
+
+read -p "Checkpoint : " check
+umount -R /mnt
+
