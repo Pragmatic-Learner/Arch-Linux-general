@@ -1,7 +1,6 @@
 #!/bin/bash
-#Setting Up time
 confirm="empty"
-until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]]; do
+until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]]; do	#Setting Up time
 	clear
 	echo -e "\n\n\n"
 	timedatectl status
@@ -13,43 +12,38 @@ until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]] || [[ -z $confirm ]]; do
 	confirm=${confirm^^}
 done
 
-
-
-unset confirm 
-while true; do
-	clear && echo "Entering timezones... [ Format: Region/City ]"
+while [[ $confirm == "Y" ]]; do
+	clear
+	echo "Entering timezones... [ Format: Region/City ]"
 	echo "Note :"
 	echo -e "\tFIRST LETTER of [[ Region ]] and [[ City ]] should be UPPERCASE."
 	echo -e "\tREST SHOULD BE LOWERCASE"
 	echo -e "Here is the available Regions And City\n\n\n"
-	cd /usr/share/zoneinfo && ls -Ad */
+
+	cd /usr/share/zoneinfo
+	ls -Ad
 	echo -e "\n\n\nDISPLAYING REGIONS"
-	
 
+	read -p "Enter timezone [ Region ] : " Region			#	Input	Region
 
-	read -p "Enter timezone [ Region ] : " Region			#Region Input
-
-
-
-	if [ -d "/usr/share/zoneinfo/$Region" ]; then
+	if [ -d "/usr/share/zoneinfo/$Region" ]; then			#If folder /usr/share/zoneinfo/Region exists
 		cd /usr/share/zoneinfo/$Region && ls -Ad */
-		read -p "Enter timezone [ City ] : " City		#City Input
+		read -p "Enter timezone [ City ] : " City		#	Input	City
 
 		if [ -f "/usr/share/zoneinfo/$Region/$City" ]; then
 			timedatectl set-timezone $Region/$City
-			break						#break
+			unset confirm
 		else
 			echo "ERROR!! CITY DOES NOT EXIST"
 		fi
-	elif [ -f "/usr/share/zoneinfo/%Region" ]; then
+	elif [ -f "/usr/share/zoneinfo/%Region" ]; then			#If file /usr/share/zoneinfo/Region exists
 		timedatectl set-timezone $Region
-		break							#break
+		unset confirm
 	else
 		echo "ERROR!!  REGION DOES NOT EXIST"
 	fi
 	unset Region && unset City
 done
-unset Region && unset City
 timedatectl set-ntp true
 
 
@@ -57,65 +51,110 @@ timedatectl set-ntp true
 
 #setting up disk partitions
 disk="notadrive"
-
-
-until [ -d "/sys/block/$disk" ]; do clear && lsblk && fdisk -l; read -p "Enter name of disk to format : " disk; done
-
-echo "Disk found, beginning formatting..."
-
-until [[ $lgptdos == "gpt" ]] || [[ $lgptdos == "dos" ]]; do read -p "Enter label ( gpt / dos ) :: " lgptdos; done
-
-echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
-
-
-
-until [[ $efi =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $efi ]]; do read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi; done
-
-until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do read -p "Enter size of SWAP partition (default = None)		:: " swap; done
-
-until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $root ]]; do read -p "Enter size of ROOT partition (default = ALL)		:: " root; done
-
-
-
+while [[ confirm != "Y" ]]; do
+	until [ -d "/sys/block/$disk" ]; do
+		clear
+		lsblk && fdisk -l
+		read -p "Enter name of disk to format : " disk
+	done
+	
+	echo "Disk found, beginning formatting..."
+	
+	until [[ $lgptdos == "gpt" ]] || [[ $lgptdos == "dos" ]]; do
+		clear
+		echo "Disk		: /dev/$disk"
+		echo
+		read -p "Enter label ( gpt / dos ) :: " lgptdos
+	done
+	
+	echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
+	
+	until [[ $efi =~ ^[0-9]+(K|M|G|T|P)$ ]]; do
+		clear
+		echo "Disk		: /dev/$disk"
+		echo "Disk label	: $lgptdos"
+		echo
+		read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi
+		[[ 0z $efi ]] && efi="512MiB"
+	done
+	
+	until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do
+		clear
+		echo "Disk		: /dev/$disk"
+		echo "Disk label	: $lgptdos"
+		echo "EFI size		: $efi"
+		echo
+		read -p "Enter size of SWAP partition (default = None)		:: " swap
+	done
+	
+	until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $root ]]; do
+		clear
+		echo "Disk		: /dev/$disk"
+		echo "Disk label	: $lgptdos"
+		echo "EFI size		: $efi"
+		echo "SWAP size		: $swap"
+		echo
+		read -p "Enter size of ROOT partition (default = ALL)		:: " root
+		[[ -z $root ]] && root="+"
+	done
+	clear
+	echo "Disk		: /dev/$disk"
+	echo "Disk label	: $lgptdos"
+	echo "EFI size		: $efi"
+	echo "SWAP size		: $swap"
+	echo "ROOT size		: $root"
+	echo
+	
 #Must add ability to choose root filesystem in the future
+#List of filesystems:Ext, Ext2, Ext3, Ext4,Xiafs, JFS, BTRFS, XFS, bcachefs, ReiserFS, Resier4, SquashFS, NTFS, exFAT
 
 #setting up partition and filesystems
-[[ -z $efi ]] && efi="512MiB"
-[[ -z $root ]] && root="+"
+	sfdisk --delete /dev/$disk
+	if [[ -z $swap ]]; then
+		echo -e "label:$lgptdos\n size=$efi, type=U\n size=$root, type=L" | sfdisk /dev/sda
 
-if [[ -z $swap ]]; then
-	echo -e "label:$lgptdos\n size=$efi, type=U\n size=$root, type=L" | sfdisk /dev/sda
+		mkfs.ext4 /dev/"$disk"2
+		mkfs.fat -F 32 /dev/"$disk"1
 	
-	mkfs.fat -F 32 /dev/sda1						#Setting up filesystems
-	mkfs.ext4 /dev/sda2
+		mount /dev/"$disk"2 /mnt
+		mount --mkdir /dev/"$disk"1 /mnt/boot
+	else
+		echo -e "label:$lgptdos\n size=$efi, type=U\n size=$swap, type=S\n size=$root, type=L" | sfdisk /dev/sda
+	
+		mkfs.fat -F 32 /dev/sda1				#	Setting up filesystems
+		mkswap /dev/sda2
+		mkfs.ext4 /dev/sda3
+	
+		mount /dev/sda3 /mnt					#	Mounting partitions
+		mount --mkdir /dev/sda1 /mnt/boot
+		swapon /dev/sda2
+	fi
+	unset efi && unset swap && unset root
+	read -p "Confirm set-up ( Y/n ) ?" confirm
+	confirm=${confirm^^}
+	[[ $confirm == "N" ]] && continue
 
-	mount /dev/sda2 /mnt							#Mounting partitions
-	mount --mkdir /dev/sda1 /mnt/boot
-else
-	echo -e "label:$lgptdos\n size=$efi, type=U\n size=$swap, type=S\n size=$root, type=L" | sfdisk /dev/sda
+done
 
-	mkfs.fat -F 32 /dev/sda1						#Setting up filesystems
-	mkswap /dev/sda2
-	mkfs.ext4 /dev/sda3
-
-	mount /dev/sda3 /mnt							#Mounting partitions
-	mount --mkdir /dev/sda1 /mnt/boot
-	swapon /dev/sda2
-fi
-unset efi && unset swap && unset root
-
-#installing packages			replace intel-ucode with amd-ucode if using amd cpu alright
-pacstrap -K /mnt base linux linux-firmware efibootmgr ffmpeg sudo reflector base-devel man git neovim networkmanager
-#pacstrap -K /mnt base linux linux-firmware base-devel intel-ucode git neovim efibootmgr grub networkmanager mesa xf86-video-intel vulkan-intel  libva-mesa-driver mesa-vdpau sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber kitty reflector openssh man sudo gimp
+#installing packages
+pacstrap -K /mnt base linux linux-firmware man sudo reflector efibootmgr neovim grub
+#base-devel git kitty
+#grub or rEFInd or LILO or ELILO or SYSLINUX or Petitboot or (builtins systemd-boot or EFI boot stub)
+#networkmanager
+#ffmpeg mpv gimp
+#mesa intel-ucode vulkan-intel intel-media-driver libvpl vpl-gpu-rt intel-media-sdk
+#sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber
 #virtualbox-guest-utils
-#pcmanfm ffmpeg mpv
-#cutefish just to see how it looks
 
-genfstab -U /mnt >> /mnt/etc/fstab						#generate automatic mount points
+#xorg-server xorg-xinit
+#cutefish
+
+genfstab -U /mnt >> /mnt/etc/fstab					#	generate automatic mount points
 
 cat <<END > /mnt/install.sh
 #!/bin/bash
 disk=$disk
+clear
 ln -sf /usr/share/zoneinfo/Time/Zone /etc/localtine
 hwclock --systohc
 echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
@@ -127,48 +166,60 @@ echo "ARCH" >> /etc/hostname
 echo "123.0.0.1 localhost" >> /etc/hosts
 echo "::1 localhost" >> /etc/hosts
 echo "123.0.1.1 ARCH" >> /etc/hosts
-
+clear
 echo "Enter ROOT PASSWORD : "
 passwd
-read -p "Enter name for main Profile (THIS PROFILE WILL BE GRANTED WHEEL PRIVILEDGES, basicly admin) : " wUser
-useradd -mG wheel \$wuser
-echo "Enter password for main Profile :: "
+read -p "Enter name for main Profile (THIS PROFILE WILL BE GRANTED WHEEL PRIVILEDGES, basicly admin) : " nuser
+useradd -mG wheel \$nuser
+echo "Enter password for main Profile \$nuser :: "
 passwd
+echo
 while true; do
-	read -p "ADD ANOTHER USER ( Y/n ) ? " confirm && confirm=\${confirm^^}
+	read -p "ADD ANOTHER USER ( Y/n ) ? " confirm
+	confirm=\${confirm^^}
 	if [[ \$confirm == "Y" ]]; then
 		read -p "Enter name of new user :: " nuser
 		if getent passwd \$nuser > /dev/null; then
-			echo "User already exist"
-			sleep 0.7
-		else
-			useradd -mG wheel \$nuser
-			echp -e "User \$nuser created\nEnter password for user \$nuser"
-			passwd \$nuser
 			clear
+			echo "User already exist"
+			continue
+		else
+			clear
+			useradd -m \$nuser
+			echo "User \$nuser created"
+			echo "Enter password for user \$nuser"
+			passwd \$nuser
 		fi
 	elif [[ \$confirm == "N" ]]; then
-		echo "No more users to be added"
+		echo "No additional users to be added"
 		break
 	else
-		clear && echo "Invalid input"
+		echo "Invalid input"
+		continue
 	fi
 done
-blkid /dev/"$disk"1
-echo ""
-read -p "WRITE THE PARTUUID exactly as is, into the input request :: " partuuid
-efibootmgr --create --disk /dev/$disk --part 1 --label "Arch Linux" --loader /vmlinuz-linux --unicode "root=PARTUUID=$partuuid rw initrd=\initramfs-linux.img"
+clear
+blkid /dev/"\$disk"1
+echo
+#read -p "WRITE THE PARTUUID exactly as is, into the input request :: " partuuid
+
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+grub-mkconfig -o /boot/grub/grub.cfg
+unset disk
 exit
 END
-unset disk && clear
+unset disk
+
 echo "sh install.sh" | arch-chroot /mnt
 
 read -p "Checkpoint : " check
 umount -R /mnt
 timedatectl set-ntp true
 systemctl enable NetworkManager
-systemctl enable vboxservice.service
+#systemctl enable vboxservice.service
+
 #systemctl start sddm.service
+
 sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
 
 yay -Y --gendb
