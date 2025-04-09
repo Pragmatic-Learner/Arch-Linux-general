@@ -75,7 +75,7 @@ while [[ confirm != "Y" ]]; do
 		echo "Disk label	: $lgptdos"
 		echo
 		read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi
-		[[ 0z $efi ]] && efi="512MiB"
+		[[ -z $efi ]] && efi="512MiB"
 	done
 	
 	until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do
