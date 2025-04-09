@@ -1,5 +1,7 @@
 #!/bin/bash
+confirm="empty"
 until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]]; do	#Setting Up time
+	unset Region && unset City
 	clear
 	echo -e "\n\n\n"
 	timedatectl status
@@ -45,7 +47,6 @@ until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]]; do	#Setting Up time
 		else
 			echo "ERROR!!  REGION DOES NOT EXIST"
 		fi
-		unset Region && unset City
 		timedatectl set-ntp true
 		timedatectl
 		read -p "Confirm timezone set-up ( Y/n ) : " confirm
@@ -54,18 +55,18 @@ until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]]; do	#Setting Up time
 done
 
 
-
+confirm="N"
 #setting up disk partitions
 while [[ $confirm != "Y" ]]; do
+	disk="empty" && efi="empty" && swap="empty" && root="empty"
 	until [ -d "/sys/block/$disk" ]; do
 		clear
 		lsblk && fdisk -l
 		read -p "Enter name of disk to format : " disk
 		[[ -z $disk ]] && disk="empty"
 	done
-	
 	echo "Disk found, beginning formatting..."
-	
+
 	until [[ $lgptdos == "gpt" ]] || [[ $lgptdos == "dos" ]]; do
 		clear
 		echo "Disk		: /dev/$disk"
@@ -73,13 +74,13 @@ while [[ $confirm != "Y" ]]; do
 		read -p "Enter label ( gpt / dos ) :: " lgptdos
 		[[ -z $lgptdos ]] && lgptdos="empty"
 	done
-	
+
 	echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
 	
 	until [[ $efi =~ ^[0-9]+(K|M|G|T|P)$ ]]; do
 		clear
-		echo "Disk		: /dev/$disk"
-		echo "Disk label	: $lgptdos"
+		echo -e "Disk\t\t: /dev/$disk"
+		echo -e "Disk label\t: $lgptdos"
 		echo
 		read -p "Enter size of EFI boot partition (default = 512MB)	:: " efi
 		[[ -z $efi ]] && efi="512M"
@@ -87,29 +88,29 @@ while [[ $confirm != "Y" ]]; do
 
 	until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do
 		clear
-		echo "Disk		: /dev/$disk"
-		echo "Disk label	: $lgptdos"
-		echo "EFI size		: $efi"
+		echo -e "Disk\t\t: /dev/$disk"
+		echo -e "Disk label\t: $lgptdos"
+		echo -e "EFI size\t: $efi"
 		echo
 		read -p "Enter size of SWAP partition (default = None)		:: " swap
 	done
 
 	until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ $root == "+" ]]; do
 		clear
-		echo "Disk		: /dev/$disk"
-		echo "Disk label	: $lgptdos"
-		echo "EFI size		: $efi"
-		echo "SWAP size		: $swap"
+		echo -e "Disk\t\t: /dev/$disk"
+		echo -e "Disk label\t: $lgptdos"
+		echo -e "EFI size\t: $efi"
+		echo -e "SWAP size\t: $swap"
 		echo
 		read -p "Enter size of ROOT partition (default = ALL)		:: " root
 		[[ -z $root ]] && root="+"
 	done
 	clear
-	echo "Disk		: /dev/$disk"
-	echo "Disk label	: $lgptdos"
-	echo "EFI size		: $efi"
-	echo "SWAP size		: $swap"
-	echo "ROOT size		: $root"
+	echo -e "Disk\t\t: /dev/$disk"
+	echo -e "Disk label\t: $lgptdos"
+	echo -e "EFI size\t: $efi"
+	echo -e "SWAP size\t: $swap"
+	echo -e "ROOT size\t: $root"
 	echo
 	lsblk
 	read -p "Confirm set-up ( Y/n ) ?" confirm
