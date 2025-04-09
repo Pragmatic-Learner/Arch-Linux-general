@@ -143,7 +143,7 @@ while [[ $confirm != "Y" ]]; do
 	fi
 	unset efi && unset swap && unset root
 done
-
+clear
 #installing packages
 pacstrap -K /mnt base linux linux-firmware man sudo reflector efibootmgr neovim grub
 #base-devel git kitty
@@ -155,7 +155,7 @@ pacstrap -K /mnt base linux linux-firmware man sudo reflector efibootmgr neovim 
 #virtualbox-guest-utils
 
 #xorg-server xorg-xinit
-#cutefish
+#sddm cutefish
 
 genfstab -U /mnt >> /mnt/etc/fstab					#	generate automatic mount points
 
@@ -165,15 +165,12 @@ disk=$disk
 clear
 ln -sf /usr/share/zoneinfo/$timezone /etc/localtine
 hwclock --systohc
-echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-echo "en_GB.UTF-8 UTF-8" >> /etc/locale.gen
+echo -e "en_US.UTF-8 UTF-8\nen_GB.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
-echo "LANG=en_GB.UTF-8 UTF-8" >> /etc/locale.conf
-echo "KEYMAP=us" >> /etc/vconsole.conf
-echo "ARCH" >> /etc/hostname
-echo "123.0.0.1 localhost" >> /etc/hosts
-echo "::1 localhost" >> /etc/hosts
-echo "123.0.1.1 ARCH" >> /etc/hosts
+echo "LANG=en_GB.UTF-8 UTF-8" > /etc/locale.conf
+echo "KEYMAP=us" > /etc/vconsole.conf
+echo "ARCH" > /etc/hostname
+echo -e "123.0.0.1 localhost\n::1 localhost\n123.0.1.1 ARCH" > /etc/hosts
 clear
 echo "Enter ROOT PASSWORD : "
 passwd
@@ -226,6 +223,7 @@ timedatectl set-ntp true
 systemctl enable NetworkManager
 systemctl enable vboxservice.service
 systemctl start sddm.service
+systemctl enable sddm.service
 exit
 END
 unset disk
