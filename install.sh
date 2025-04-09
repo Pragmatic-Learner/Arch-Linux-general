@@ -79,7 +79,7 @@ while [[ confirm != "Y" ]]; do
 		read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi
 		[[ -z $efi ]] && efi="512M"
 	done
-	
+
 	until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do
 		clear
 		echo "Disk		: /dev/$disk"
@@ -88,7 +88,7 @@ while [[ confirm != "Y" ]]; do
 		echo
 		read -p "Enter size of SWAP partition (default = None)		:: " swap
 	done
-	
+
 	until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ $root == "+" ]]; do
 		clear
 		echo "Disk		: /dev/$disk"
@@ -106,7 +106,13 @@ while [[ confirm != "Y" ]]; do
 	echo "SWAP size		: $swap"
 	echo "ROOT size		: $root"
 	echo
-	
+
+	clear
+	lsblk
+	read -p "Confirm set-up ( Y/n ) ?" confirm
+	confirm=${confirm^^}
+	[[ $confirm == "N" ]] && continue
+
 #Must add ability to choose root filesystem in the future
 #List of filesystems:Ext, Ext2, Ext3, Ext4,Xiafs, JFS, BTRFS, XFS, bcachefs, ReiserFS, Resier4, SquashFS, NTFS, exFAT
 
@@ -132,10 +138,6 @@ while [[ confirm != "Y" ]]; do
 		swapon /dev/sda2
 	fi
 	unset efi && unset swap && unset root
-	read -p "Confirm set-up ( Y/n ) ?" confirm
-	confirm=${confirm^^}
-	[[ $confirm == "N" ]] && continue
-
 done
 
 #installing packages
