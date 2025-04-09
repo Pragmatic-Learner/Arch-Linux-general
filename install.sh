@@ -56,6 +56,7 @@ while [[ confirm != "Y" ]]; do
 		clear
 		lsblk && fdisk -l
 		read -p "Enter name of disk to format : " disk
+		[[ -z $disk ]] && continue
 	done
 	
 	echo "Disk found, beginning formatting..."
@@ -75,7 +76,7 @@ while [[ confirm != "Y" ]]; do
 		echo "Disk label	: $lgptdos"
 		echo
 		read -p "Enter size of EFI boot partition (default = 512MiB)	:: " efi
-		[[ -z $efi ]] && efi="512MiB"
+		[[ -z $efi ]] && efi="512M"
 	done
 	
 	until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do
