@@ -51,12 +51,12 @@ timedatectl set-ntp true
 
 #setting up disk partitions
 while [[ confirm != "Y" ]]; do
-	disk="empy" && efi="empty" && swap="empty" && root="empty"
+	disk="empy" && lgptdos="empty" && efi="empty" && swap="empty" && root="empty"
 	until [ -d "/sys/block/$disk" ]; do
 		clear
 		lsblk && fdisk -l
 		read -p "Enter name of disk to format : " disk
-		[[ -z $disk ]] && continue
+		[[ -z $disk ]] && disk="empty"
 	done
 	
 	echo "Disk found, beginning formatting..."
@@ -66,6 +66,7 @@ while [[ confirm != "Y" ]]; do
 		echo "Disk		: /dev/$disk"
 		echo
 		read -p "Enter label ( gpt / dos ) :: " lgptdos
+		[[ -z $lgptdos ]] && lgptdos="empty"
 	done
 	
 	echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
@@ -88,7 +89,7 @@ while [[ confirm != "Y" ]]; do
 		read -p "Enter size of SWAP partition (default = None)		:: " swap
 	done
 	
-	until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $root ]]; do
+	until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ $root == "+" ]]; do
 		clear
 		echo "Disk		: /dev/$disk"
 		echo "Disk label	: $lgptdos"
