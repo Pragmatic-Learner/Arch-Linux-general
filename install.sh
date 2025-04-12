@@ -1,169 +1,195 @@
 #!/bin/bash
-confirm="empty"
-until [[ $confirm == "Y" ]] || [[ $confirm == "N" ]]; do	#Setting Up time
-	unset Region && unset City
+three_dots() {
+	echo -n $1
+	sleep 1
+	echo -n "."
+	sleep 1
+	echo -n "."
+	sleep 1
+	echo "."
 	clear
-	echo -e "\n\n\n"
-	timedatectl status
-	echo -e "\n\n\n"
-	echo -e "List of commands:"
-	echo -e "\tY = Change timezone"
-	echo -e "\tN = Do not change timezone"
-	read -p "Change timezone ( Y/n )" confirm
-	confirm=${confirm^^}
-	if [[ $confirm == "Y" ]]; then
-		clear
-		echo "Entering timezones... [ Format: Region/City ]"
-		echo "Note :"
-		echo -e "\tFIRST LETTER of [[ Region ]] and [[ City ]] should be UPPERCASE."
-		echo -e "\tREST SHOULD BE LOWERCASE"
-		echo -e "Here is the available Regions And City"
-		echo
-		echo
-		cd /usr/share/zoneinfo
-		ls -Ad */
-		echo
-		echo "DISPLAYING REGIONS"
-	
-		read -p "Enter timezone [ Region ] : " Region			#	Input	Region
-	
-		if [ -d "/usr/share/zoneinfo/$Region" ]; then			#If folder /usr/share/zoneinfo/Region exists
-			cd /usr/share/zoneinfo/$Region
-			echo
-			echo
-			ls -A
-			echo
-			read -p "Enter timezone [ City ] : " City		#	Input	City
-	
-			if [ -f "/usr/share/zoneinfo/$Region/$City" ]; then
-				timezone="${Region}/${City}"
-				timedatectl set-timezone $timezone
-			else
-				echo "ERROR!! CITY DOES NOT EXIST"
-			fi
-		elif [ -f "/usr/share/zoneinfo/%Region" ]; then			#If file /usr/share/zoneinfo/Region exists
-			timezone=$Region
-			timedatectl set-timezone $timezone
-		else
-			echo "ERROR!!  REGION DOES NOT EXIST"
-		fi
-		timedatectl set-ntp true
-		timedatectl
-		read -p "Confirm timezone set-up ( Y/n ) : " confirm
-		confirm=${confirm^^}
+	return 0
+}
+
+clear
+choice_Update_system_clock="empty"
+#timedatectl status
+while [[ ${choice_Update_system_clock} != "Y" && ${choice_Update_system_clock} != "N" ]]; do
+	read -p "Change timezone ( Y/n ) : " choice_Update_system_clock
+	choice_Update_system_clock=${choice_Update_system_clock^^}
+
+	if [[ ${choice_Update_system_clock} == "Y" ]]; then
+		three_dots "Proceeding to change system clock, please choice you Region and City"
+
+	elif [[ ${choice_Update_system_cloc} == "N" ]]; then
+		three_dots "No changes made.  Proceeding to disk partitioning"
+
+	else
+		three_dots "Invalid Input"
 	fi
 done
 
+while [[ ${choice_Update_system_clock} == "Y" ]]; do
+	confirm_Timezone_change="empty"
+	Timezone="empty"
+	Region="empty"
+	City="empty"
+	echo "Format: Region/City  || Respect the Capitalizations"
+	echo "DISPLAYING REGIONS"
+	cd /usr/share/zoneinfo
+	ls -A
+	echo
 
-confirm="N"
-#setting up disk partitions
-while [[ $confirm != "Y" ]]; do
-	disk="empty" && efi="empty" && swap="empty" && root="empty"
-	until [ -d "/sys/block/$disk" ]; do
-		clear
-		lsblk && fdisk -l
-		read -p "Enter name of disk to format : " disk
-		[[ -z $disk ]] && disk="empty"
-	done
-	echo "Disk found, beginning formatting..."
+	read -p "Enter Region : " Region; : "${Region:=empty}"
 
-	until [[ $lgptdos == "gpt" ]] || [[ $lgptdos == "dos" ]]; do
-		clear
-		echo "Disk		: /dev/$disk"
+	if [[ -f "/usr/share/zoneinfo/${Region}" ]]; then #	I wonder if  /usr/share/zoneinfo/. or /usr/share/zoneinfo/~ can be valid paths
+		Timezone="$Region"
+	elif [[ -d "/usr/share/zoneinfo/${Region}" ]]; then
+		echo "DISPLAYING CITIES"
+		cd /usr/share/zoneinfo/${Region}
+		ls -A
 		echo
-		read -p "Enter label ( gpt / dos ) :: " lgptdos
-		[[ -z $lgptdos ]] && lgptdos="empty"
+
+		read -p "Enter City : " City; : "${City:=empty}"
+
+		if [[ -f "/usr/share/zoneinfo/${Region}/${City}" ]]; then
+			Timezone="${Region}/${City}"
+		else
+			three_dots "City does not exist"
+			continue
+		fi
+	else
+		three_dots "Region does not exist"
+		continue
+	fi
+
+	while [[ ${confirm_Timezone_change} != "Y" && ${confirm_Timezone_change} != "N" ]]; do
+		clear
+		timedatectl set-timezone ${Timezone}
+		read -p "Confirm Timezone ( Y/n ) : " cofirm_Timezone_change
+		cofirm_Timezone_change=${cofirm_Timezone_change^^}
+
+		if [[ ${confirm_Timezone_change} == "Y" ]]; then
+			three_dots "Changes confirmed, Proceeding to disk partitioning"
+
+		elif [[ ${confirm_Timezone_change} == "N" ]]; then
+			three_dots "Changes rejected by user, starting input again"
+			timedatectl set-timezone UTC
+
+		else
+			three_dots "Invalid input"
+		fi
 	done
+	unset confirm_Timezone_change
+	unset Region
+	unset City
+done
+timedatectl set-ntp true
+unset choice_Update_system_clock
+
+Disk_Partition_SetUp() {
+	clear
+	echo -e "Disk name\t\t: ${Disk_Name}"
+	echo -e "Disk path\t\t: /dev/${Disk_Name:-unset}"
+	echo -e "Partitioning scheme\t: ${Partitioning_scheme:-unset}"
+	echo
+	echo -e "EFI  size\t\t: ${EFI_Size:-unset}"
+	echo -e "SWAP size\t\t: ${SWAP_Size:-unset}"
+	echo -e "ROOT size\t\t: ${ROOT_Size:-unset}"
+}
+
+confirm_Disk_Partitions="empty"
+while [[ ${confirm_Disk_Partitions} != "Y" ]]; do
+	Disk_Name="unset"
+	while [[ ! -d "sys/block/${Disk_Name}" ]]; do
+		Disk_Partition_SetUp
+		clear
+		lsblk
+		echo
+		fdisk -l
+		read -p "Enter name of disk to partition : " Disk_Name; : "${Disk_Name:=unset}"
+	done
+	three_dots "Disk found, beginning formatting"
+
+	while [[ ${Partitioning_Scheme} != "gpt" && ${Partitioning_Scheme} != "dos" ]]; do
+		Disk_Partition_SetUp
+		read -p "Enter partitioning scheme ( gpt/dos ) : " Partitioning_Scheme
+		[[ $Partitioning_Scheme != "gpt" || $Partitioning_Scheme != "dos" ]] && three_dots "Invalid Input"
+	done
+
 
 	echo "Add one of these suffix' to the end of the partition size: K, M, G, T, P"
-	
-	until [[ $efi =~ ^[0-9]+(K|M|G|T|P)$ ]]; do
-		clear
-		echo -e "Disk\t\t: /dev/$disk"
-		echo -e "Disk label\t: $lgptdos"
-		echo
-		read -p "Enter size of EFI boot partition (default = 512MB)	:: " efi
-		[[ -z $efi ]] && efi="512M"
+
+	while [[ ! ${Size_Input} =~ ^[0-9]+(K|M|G|T|P)$ } ]]; do
+		Disk_Partitioning_SetUp
+		read -p "Enter size of EFI boot partition ( default = 512M ) : " Size_Input; : "${Size_Input=512M}"
 	done
-
-	until [[ $swap =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ -z $swap ]]; do
-		clear
-		echo -e "Disk\t\t: /dev/$disk"
-		echo -e "Disk label\t: $lgptdos"
-		echo -e "EFI size\t: $efi"
-		echo
-		read -p "Enter size of SWAP partition (default = None)		:: " swap
+	EFI_Size=${Size_input}
+	while [[ ! ${Size_Input} =~ ^[0-9]+(K|M|G|T|P)$ ]]; do
+		Disk_Partitioning_SetUp
+		read -p "Enter size of SWAP partition ( default = None ) : " Size_Input; : "${Size_Input=No Swap}"
 	done
-
-	until [[ $root =~ ^[0-9]+(K|M|G|T|P)$ ]] || [[ $root == "+" ]]; do
-		clear
-		echo -e "Disk\t\t: /dev/$disk"
-		echo -e "Disk label\t: $lgptdos"
-		echo -e "EFI size\t: $efi"
-		echo -e "SWAP size\t: $swap"
-		echo
-		read -p "Enter size of ROOT partition (default = ALL)		:: " root
-		[[ -z $root ]] && root="+"
+	SWAP_Size=${Size_Input}
+	while [[ ! ${Size_Input} =~ ^[0-9]+(K|M|G|T|P)$ && -n ${Size_Input} ]]; do
+		Disk_Partition_SetUp
+		read -p "Enter size of ROOT partition ( default = ALL ) : " Size_Input; : "${Size_Input=ALL}"
 	done
-	clear
-	echo -e "Disk\t\t: /dev/$disk"
-	echo -e "Disk label\t: $lgptdos"
-	echo -e "EFI size\t: $efi"
-	echo -e "SWAP size\t: $swap"
-	echo -e "ROOT size\t: $root"
-	echo
-	lsblk
-	read -p "Confirm set-up ( Y/n ) ?" confirm
-	confirm=${confirm^^}
-	[[ $confirm == "N" ]] && continue
+	ROOT_Size=${Size_Input}
 
-#Must add ability to choose root filesystem in the future
-#List of filesystems:Ext, Ext2, Ext3, Ext4,Xiafs, JFS, BTRFS, XFS, bcachefs, ReiserFS, Resier4, SquashFS, NTFS, exFAT
-
-#setting up partition and filesystems
-	sfdisk --delete /dev/$disk
-	if [[ -z $swap ]]; then
-		echo -e "label:$lgptdos\n size=$efi, type=U\n size=$root, type=L" | sfdisk /dev/sda
-
-		mkfs.ext4 /dev/"$disk"2
-		mkfs.fat -F 32 /dev/"$disk"1
+	while [[ ${confirm_Disk_Partitions} != "Y" && ${confirm_Disk_Partitions} != "N" ]]; do
+		Disk_Partition_Scheme
+		echo
+		read -p "Confirm the choosen settings for pertitioning the disk ( Y/n ) : " confirm_Disk_Partitions
+		confirm_Disk_Partitions=${confirm_Disk_Partitions^^}
+	done
 	
-		mount /dev/"$disk"2 /mnt
-		mount --mkdir /dev/"$disk"1 /mnt/boot
-	else
-		echo -e "label:$lgptdos\n size=$efi, type=U\n size=$swap, type=S\n size=$root, type=L" | sfdisk /dev/sda
-	
-		mkfs.fat -F 32 /dev/sda1				#	Setting up filesystems
-		mkswap /dev/sda2
-		mkfs.ext4 /dev/sda3
-	
-		mount /dev/sda3 /mnt					#	Mounting partitions
-		mount --mkdir /dev/sda1 /mnt/boot
-		swapon /dev/sda2
-	fi
-	unset efi && unset swap && unset root
 done
+
+sfdisk --delete /dev/${Disk_Name}
+[[ ${ROOT_Size} == "ALL" ]] && ROOT_Size="+"
+if [[ ${SWAP_Size} == "No Swap" ]]; then
+	echo -e "label:${Partitioning_Scheme}\n size=${EFI_Size}, type=U\n size=${ROOT_Size}, type=L" | sfdisk /dev/sda
+
+	mkfs.ext4 /dev/"$disk"2
+	mkfs.fat -F 32 /dev/"$disk"1
+
+	mount /dev/"$disk"2 /mnt
+	mount --mkdir /dev/"$disk"1 /mnt/boot
+else
+	echo -e "label:${Partitioning_Scheme}\n size=${EFI_Swap}, type=U\n size=${SWAP_Size}, type=S\n size=${ROOT_Size}, type=L" | sfdisk /dev/sda
+
+	mkfs.fat -F 32 /dev/${Disk_Name}1
+	mkswap /dev/${Disk_Name}2
+	mkfs.ext4 /dev/${Disk_Name}3
+
+	mount /dev/${Disk_Name}3 /mnt
+	mount --mkdir /dev/${Disk_Name}1 /mnt/boot
+	swapon /dev/${Disk_Name}2
+fi
+unset confirm_Disk_Partitions
+unset Disk_Name
+unset Size_Input
+unset Partitioning_scheme
+unset EFI_Size
+unset SWAP_Size
+unset ROOT_Size
+
 clear
 #installing packages
-pacstrap -K /mnt base linux linux-firmware man sudo reflector efibootmgr neovim grub
-#base-devel git kitty
-#grub or rEFInd or LILO or ELILO or SYSLINUX or Petitboot or (builtins systemd-boot or EFI boot stub)
-#networkmanager
-#ffmpeg mpv gimp
-#mesa intel-ucode vulkan-intel intel-media-driver libvpl vpl-gpu-rt intel-media-sdk
-#sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber
+pacstrap -K /mnt base linux linux-firmware man sudo reflector efibootmgr gub neovim base-devel git kitty networkmanager ffmpeg mpv mesa intel-ucode vulkan-intel intel-media-driver libvpl vpl-gpu-rt intel-media-sdk sof-firmware pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber
+
+#xorg xorg-init
 #virtualbox-guest-utils
 
-#xorg-server xorg-xinit
-#sddm cutefish
+#sddm "cutefish"
+#grub or rEFInd or LILO or ELILO or SYSLINUX or Petitboot or (builtins systemd-boot or EFI boot stub)
 
 genfstab -U /mnt >> /mnt/etc/fstab					#	generate automatic mount points
 
 cat <<END > /mnt/install.sh
 #!/bin/bash
-disk=$disk
 clear
-ln -sf /usr/share/zoneinfo/$timezone /etc/localtine
+ln -sf /usr/share/zoneinfo/$Timezone /etc/localtine
 hwclock --systohc
 echo -e "en_US.UTF-8 UTF-8\nen_GB.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
@@ -205,13 +231,10 @@ while true; do
 	fi
 done
 clear
-blkid /dev/"\$disk"1
 echo
-#read -p "WRITE THE PARTUUID exactly as is, into the input request :: " partuuid
 
 grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
-unset disk
 
 #sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
 #yay -Y --gendb
@@ -224,12 +247,11 @@ systemctl enable NetworkManager
 systemctl enable vboxservice.service
 systemctl start sddm.service
 systemctl enable sddm.service
-exit
 END
-unset disk
+
+unset Timezone
 
 arch-chroot /mnt
 
-read -p "Checkpoint : " check
 umount -R /mnt
 
