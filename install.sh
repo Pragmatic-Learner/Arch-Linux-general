@@ -148,7 +148,10 @@ done
 sfdisk --delete /dev/${Disk_Name}
 [[ ${ROOT_Size} == "ALL" ]] && ROOT_Size="+"
 if [[ ${SWAP_Size} == "No Swap" ]]; then
-	echo -e "label:${Partitioning_Scheme}\n size=${EFI_Size}, type=U\n size=${ROOT_Size}, type=L" | sfdisk /dev/sda
+	wipefs -a /dev/${Disk_Name}1
+	wipefs -a /dev/${Disk_Name}2
+
+	echo -e "label:${Partitioning_Scheme}\n size=${EFI_Size}, type=U\n size=${ROOT_Size}, type=L\nwrite" | sfdisk /dev/${Disk_Name}
 
 	mkfs.ext4 /dev/"$disk"2
 	mkfs.fat -F 32 /dev/"$disk"1
@@ -156,7 +159,11 @@ if [[ ${SWAP_Size} == "No Swap" ]]; then
 	mount /dev/"$disk"2 /mnt
 	mount --mkdir /dev/"$disk"1 /mnt/boot
 else
-	echo -e "label:${Partitioning_Scheme}\n size=${EFI_Swap}, type=U\n size=${SWAP_Size}, type=S\n size=${ROOT_Size}, type=L" | sfdisk /dev/sda
+	wipefs -a /dev/${Disk_Name}1
+	wipefs -a /dev/${Disk_Name}2
+	wipefs -a /dev/${Disk_Name}3
+
+	echo -e "label:${Partitioning_Scheme}\n size=${EFI_Swap}, type=U\n size=${SWAP_Size}, type=S\n size=${ROOT_Size}, type=L\nwrite" | sfdisk /dev/sda
 
 	mkfs.fat -F 32 /dev/${Disk_Name}1
 	mkswap /dev/${Disk_Name}2
@@ -191,20 +198,27 @@ cat <<END > /mnt/install.sh
 clear
 ln -sf /usr/share/zoneinfo/$Timezone /etc/localtine
 hwclock --systohc
+
 echo -e "en_US.UTF-8 UTF-8\nen_GB.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
+
 echo "LANG=en_GB.UTF-8 UTF-8" > /etc/locale.conf
+
 echo "KEYMAP=us" > /etc/vconsole.conf
+
 echo "ARCH" > /etc/hostname
-echo -e "123.0.0.1 localhost\n::1 localhost\n123.0.1.1 ARCH" > /etc/hosts
+echo -e "127.0.0.1 localhost\n::1 localhost\n127.0.1.1 ARCH" > /etc/hosts
+
 clear
 echo "Enter ROOT PASSWORD : "
 passwd
+
 read -p "Enter name for main Profile (THIS PROFILE WILL BE GRANTED WHEEL PRIVILEDGES, basicly admin) : " nuser
 useradd -mG wheel \$nuser
 echo "Enter password for main Profile \$nuser :: "
 passwd \$nuser
 EDITOR=nvim visudo
+
 echo
 while true; do
 	read -p "ADD ANOTHER USER ( Y/n ) ? " confirm
